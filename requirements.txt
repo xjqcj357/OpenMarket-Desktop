@@ -1,0 +1,2 @@
+basic-nostr>=1.1.0
+basic-ipfs>=1.0.0
