@@ -29,6 +29,7 @@ An attacker can, with no authentication:
 | Seed relays crowded out (eclipse) | the 5 hardcoded seeds are **always** queried, so honest listings always come through; discovered relays only *add* |
 | nsec echoed to terminal / shell history | read with `getpass` (hidden) |
 | Announcing links your IP ↔ npub | explicit warning before every announce (CLI + GUI) |
+| **Forged listings / spoofed seller npub** | every event is fully NIP-01 verified (`verify_event`): the id is recomputed from the content **and** the BIP-340 Schnorr signature is checked, so only listings genuinely signed by the claimed npub are shown |
 
 ## Residual risks (NOT fully solved — know these)
 
@@ -40,10 +41,12 @@ An attacker can, with no authentication:
    - Run behind a VPN/Tor transparent proxy at the OS/network level.
    - Delete `.relay_cache.json` to forget auto-discovered relays.
 
-2. **Listings are not signature-verified.** The underlying library does not
-   verify event signatures, so the displayed **seller pubkey is unauthenticated**
-   — an attacker relay can attribute any listing to any npub. Treat seller
-   identity and reputation as unproven until per-event Schnorr verification lands.
+2. **Identity is authenticated, but not *real-world* identity.** Every listing is
+   now Schnorr-verified, so the seller npub shown genuinely signed it and its
+   content wasn't altered in transit. That proves *key ownership*, not who the
+   person is — there is still **no reputation system**, so a fresh npub has no
+   track record. An attacker can always mint a new valid key; verification stops
+   forgery and impersonation, not throwaway accounts.
 
 3. **Sybil influence on discovery.** An attacker with many fake keys/relay-lists
    can fill the ~25 discovered relay slots and inject spam into your view (it

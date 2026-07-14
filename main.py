@@ -198,6 +198,42 @@ def _first(seq, maxlen):
     return clean(seq[0], maxlen) if isinstance(seq, list) and seq else ""
 
 
+def verify_event(event):
+    """Full NIP-01 verification of a raw event: recompute the id from
+    [0, pubkey, created_at, kind, tags, content] AND check the BIP-340 Schnorr
+    signature. Both are required -- verifying only the sig-over-id lets an
+    attacker bind a valid signature to mismatched content. Returns True/False,
+    never raises. A True result means the listing genuinely came from the npub
+    it claims, so the displayed seller identity can be trusted."""
+    from coincurve import PublicKeyXOnly
+
+    try:
+        pub_hex = event["pubkey"]
+        serialized = json.dumps(
+            [0, pub_hex, event["created_at"], event["kind"], event["tags"], event["content"]],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        if hashlib.sha256(serialized.encode("utf-8")).hexdigest() != event["id"]:
+            return False
+        return PublicKeyXOnly(bytes.fromhex(pub_hex)).verify(
+            bytes.fromhex(event["sig"]), bytes.fromhex(event["id"])
+        )
+    except Exception:
+        return False
+
+
+def _verified(events, log):
+    """Keep only events with a valid signature; report how many were dropped."""
+    if not isinstance(events, list):
+        return []
+    good = [e for e in events if isinstance(e, dict) and verify_event(e)]
+    dropped = len(events) - len(good)
+    if dropped:
+        log(f"Dropped {dropped} listing(s) with invalid or forged signatures.")
+    return good
+
+
 def parse_listing(event):
     """Turn a raw kind-30402 event into a flat, sanitized dict. Returns None for
     structurally invalid events. Never raises on hostile input."""
@@ -330,9 +366,11 @@ def fetch_listings(limit=50, widen=True, log=print):
     relays = get_relays()
     log(f"Reading NIP-99 listings from {len(relays)} relay(s)...")
     with NostrClient(relay_urls=relays) as nostr:
-        raw = nostr.read_products(limit=limit)
+        # Verify signatures immediately -- everything downstream is authenticated.
+        raw = _verified(nostr.read_products(limit=limit), log)
 
         if widen and _pinned_relays() is None:
+            # Only follow relay hints from sellers whose listings we verified.
             pubkeys = list({e.get("pubkey") for e in raw if e.get("pubkey")})[:60]
             try:
                 counts = discover_relays(nostr, pubkeys)
@@ -346,7 +384,7 @@ def fetch_listings(limit=50, widen=True, log=print):
                 save_cached_relays(merged)
                 log(f"Discovered {len(new)} new relay(s) via NIP-65; widening to {len(merged)}...")
                 with NostrClient(relay_urls=merged) as wide:
-                    raw = raw + wide.read_products(limit=limit)
+                    raw = raw + _verified(wide.read_products(limit=limit), log)
 
     return _dedupe(raw)
 
