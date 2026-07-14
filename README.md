@@ -22,16 +22,27 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Then pick `1` (browse), `2` (search), or `3` (create) from the menu.
+Then pick `1` (browse), `2` (search), or `3` (create) from the menu. A tkinter
+GUI is also available: `python gui.py`.
 
 ### Notes
 
-- **Browse/Search** need only network access to relays — no heavy setup.
-- **Create** computes the CID via [`basic-ipfs`](https://pypi.org/project/basic-ipfs/), which
-  downloads a real Kubo node (~115 MB) on first use. Everything else uses
-  [`basic-nostr`](https://pypi.org/project/basic-nostr/).
-- Override the default relays with an env var:
+- **Browse/Search** and **Create** need only [`basic-nostr`](https://pypi.org/project/basic-nostr/) —
+  no heavy setup.
+- **Create** computes the listing CID as a pure local sha2-256 hash (no IPFS
+  daemon, no network, nothing uploaded). Running a full Kubo node — which would
+  join the public IPFS DHT and leak your IP — is deliberately deferred to a
+  future, opt-in, Tor-aware seeding mode.
+- Override the default relays and disable auto-widening with an env var:
   `OPENMARKET_RELAYS="wss://relay.damus.io,wss://nos.lol"`.
+
+## Security
+
+This client reads from a hostile, unauthenticated network. It's hardened against
+malformed-event crashes, terminal-escape/Unicode injection, field-size DoS,
+IPFS-daemon IP leakage, and internal-endpoint relay discovery — but it has real
+residual risks (clearnet IP exposure / no Tor yet, unverified seller identity).
+**Read [`SECURITY.md`](SECURITY.md) before alpha testing.**
 
 ## Scope
 

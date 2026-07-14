@@ -1,2 +1,6 @@
-basic-nostr>=1.1.0
-basic-ipfs>=1.0.0
+# Pinned for reproducible alpha builds (supply-chain: you run this code).
+basic-nostr==1.1.0
+# basic-ipfs is intentionally NOT required: the listing CID is a pure local
+# sha2-256 hash (see compute_cid in main.py). Running a full Kubo node would
+# join the public IPFS DHT and leak your IP -- deferred to a future, opt-in,
+# Tor-aware seeding mode.
