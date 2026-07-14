@@ -14,16 +14,23 @@ The client has three screens:
 
 ## Run
 
+**Desktop app (Windows, portable).** Double-click **`OpenMarket.bat`** (or the
+`OpenMarket` desktop shortcut). On first run it creates a local `.venv` inside
+the folder and installs dependencies, then launches the GUI with no console
+window. The folder is self-contained — copy it to another machine with Python 3
+installed and it re-bootstraps itself.
+
+**Manual / cross-platform.**
+
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Windows (PowerShell: .venv\Scripts\Activate.ps1)
 # source .venv/bin/activate       # macOS / Linux
 pip install -r requirements.txt
-python main.py
+python gui.py                      # tkinter GUI  (or: python main.py for the CLI)
 ```
 
-Then pick `1` (browse), `2` (search), or `3` (create) from the menu. A tkinter
-GUI is also available: `python gui.py`.
+The CLI menu offers `1` (browse), `2` (search), `3` (create).
 
 ### Notes
 
